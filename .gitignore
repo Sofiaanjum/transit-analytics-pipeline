@@ -1,9 +1,12 @@
 gtfs_ttc/
 venv/
+logs/
 .env
 __pycache__/
 *.pyc
 .DS_Store
 *.log
+*.db
+*.sqlite
 target/
 dbt_packages/
