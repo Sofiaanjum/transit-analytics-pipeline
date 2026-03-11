@@ -1,0 +1,11 @@
+name: transit_dbt
+version: '1.0'
+config-version: 2
+
+profile: transit_dbt
+
+model-paths: ["models"]
+
+models:
+  transit_dbt:
+    +materialized: table

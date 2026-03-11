@@ -1,0 +1,41 @@
+version: 2
+
+models:
+
+  - name: stg_routes
+    description: "Cleaned staging table for GTFS routes data"
+    columns:
+
+      - name: route_id
+        description: "Unique identifier for each transit route"
+        tests:
+          - not_null
+          - unique
+
+      - name: route_short_name
+        description: "Short name of the route"
+
+      - name: route_long_name
+        description: "Full descriptive name of the route"
+
+      - name: route_type
+        description: "Type of transit route"
+
+  - name: stg_stops
+    description: "Cleaned staging table for GTFS stops data"
+    columns:
+
+      - name: stop_id
+        description: "Unique stop identifier"
+        tests:
+          - not_null
+          - unique
+
+      - name: stop_name
+        description: "Name of the stop"
+
+      - name: stop_lat
+        description: "Latitude of the stop"
+
+      - name: stop_lon
+        description: "Longitude of the stop"
