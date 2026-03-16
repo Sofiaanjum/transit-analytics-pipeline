@@ -4,10 +4,8 @@ import snowflake.connector
 from dotenv import load_dotenv
 from snowflake.connector.pandas_tools import write_pandas
 
-# Load environment variables
 load_dotenv()
 
-# Snowflake connection
 conn = snowflake.connector.connect(
     user=os.getenv("SNOWFLAKE_USER"),
     password=os.getenv("SNOWFLAKE_PASSWORD"),
@@ -17,87 +15,109 @@ conn = snowflake.connector.connect(
     schema=os.getenv("SNOWFLAKE_SCHEMA")
 )
 
-# Path to your GTFS static CSV files
-GTFS_PATH = "../gtfs_ttc/"  # e.g., "./gtfs_ttc/"
+GTFS_PATH = "../gtfs_ttc"
 
-# ----------------------
-# 1. Load routes.txt
-# ----------------------
-routes_file = os.path.join(GTFS_PATH, "routes.txt")
-routes_df = pd.read_csv(routes_file)
+print("Connected to Snowflake")
 
-# Keep only important columns
-routes_df = routes_df[[
+# ROUTES
+routes = pd.read_csv(f"{GTFS_PATH}/routes.txt")
+routes = routes[[
     "route_id",
     "agency_id",
     "route_short_name",
     "route_long_name",
     "route_type"
 ]]
-# Uppercase all columns
-routes_df.columns = [c.upper() for c in routes_df.columns]
+routes.columns = routes.columns.str.upper()
 
-# Load into Snowflake
-write_pandas(conn, routes_df, "ROUTES")
-print("✅ ROUTES table loaded successfully!")
+write_pandas(conn, routes, "ROUTES")
+print("ROUTES loaded")
 
-# ----------------------
-# 2. Load stops.txt
-# ----------------------
-stops_file = os.path.join(GTFS_PATH, "stops.txt")
-stops_df = pd.read_csv(stops_file)
 
-# Keep only important columns
-stops_df = stops_df[[
-    "stop_id",
-    "stop_name",
-    "stop_lat",
-    "stop_lon"
+# STOPS
+stops = pd.read_csv(f"{GTFS_PATH}/stops.txt")
+stops = stops[["stop_id", "stop_name", "stop_lat", "stop_lon"]]
+stops.columns = stops.columns.str.upper()
+
+write_pandas(conn, stops, "STOPS")
+print("STOPS loaded")
+
+
+# TRIPS
+trips = pd.read_csv(f"{GTFS_PATH}/trips.txt", dtype=str)
+trips = trips[[
+    "route_id",
+    "service_id",
+    "trip_id",
+    "trip_headsign",
+    "direction_id",
+    "block_id",
+    "shape_id"
 ]]
-stops_df.columns = [c.upper() for c in stops_df.columns]
-# Load into Snowflake
-write_pandas(conn, stops_df, "STOPS")
-print("✅ STOPS table loaded successfully!")
+trips.columns = trips.columns.str.upper()
+
+write_pandas(conn, trips, "TRIPS")
+print("TRIPS loaded")
 
 
-# ----------------------
-# 3. Load trips.txt
-# ----------------------
+# STOP_TIMES
+stop_times = pd.read_csv(f"{GTFS_PATH}/stop_times.txt", dtype=str)
+stop_times = stop_times[[
+    "trip_id",
+    "arrival_time",
+    "departure_time",
+    "stop_id",
+    "stop_sequence"
+]]
+stop_times.columns = stop_times.columns.str.upper()
 
-trips_file = os.path.join(GTFS_PATH, "trips.txt")
-# trips_df = pd.read_csv(trips_file) (giving dtype error due to nan and pyarrow fails to convert it to float)
-trips_df = pd.read_csv(trips_file, dtype=str, low_memory=False)
+write_pandas(conn, stop_times, "STOP_TIMES")
+print("STOP_TIMES loaded")
 
-trips_df.columns = [c.upper() for c in trips_df.columns]
 
-write_pandas(conn, trips_df, "TRIPS")
-print("✅ TRIPS table loaded successfully!")
+# CALENDAR
+calendar = pd.read_csv(f"{GTFS_PATH}/calendar.txt", dtype=str)
+calendar.columns = calendar.columns.str.upper()
 
-# ----------------------
-# 4. Load stop_times.txt
-# ----------------------
+write_pandas(conn, calendar, "CALENDAR")
+print("CALENDAR loaded")
 
-stop_times_file = os.path.join(GTFS_PATH, "stop_times.txt")
-# stop_times_df = pd.read_csv(stop_times_file)
-stop_times_df = pd.read_csv(stop_times_file, dtype=str, low_memory=False)
 
-stop_times_df.columns = [c.upper() for c in stop_times_df.columns]
+# AGENCY
+agency = pd.read_csv(f"{GTFS_PATH}/agency.txt", dtype=str)
+agency = agency[[
+    "agency_id",
+    "agency_name",
+    "agency_url",
+    "agency_timezone"
+]]
+agency.columns = agency.columns.str.upper()
 
-write_pandas(conn, stop_times_df, "STOP_TIMES")
-print("✅ STOP_TIMES table loaded successfully!")
+write_pandas(conn, agency, "AGENCY")
+print("AGENCY loaded")
 
-# ----------------------
-# 5. Load calendar.txt
-# ----------------------
 
-calendar_file = os.path.join(GTFS_PATH, "calendar.txt")
-# calendar_df = pd.read_csv(calendar_file)
-calendar_df = pd.read_csv(calendar_file, dtype=str, low_memory=False)
+# CALENDAR_DATES
+calendar_dates = pd.read_csv(f"{GTFS_PATH}/calendar_dates.txt", dtype=str)
+calendar_dates.columns = calendar_dates.columns.str.upper()
 
-calendar_df.columns = [c.upper() for c in calendar_df.columns]
+write_pandas(conn, calendar_dates, "CALENDAR_DATES")
+print("CALENDAR_DATES loaded")
 
-write_pandas(conn, calendar_df, "CALENDAR")
-print("✅ CALENDAR table loaded successfully!")
 
-# Close connection
+# SHAPES
+shapes = pd.read_csv(f"{GTFS_PATH}/shapes.txt", dtype=str)
+shapes = shapes[[
+    "shape_id",
+    "shape_pt_lat",
+    "shape_pt_lon",
+    "shape_pt_sequence"
+]]
+shapes.columns = shapes.columns.str.upper()
+
+write_pandas(conn, shapes, "SHAPES")
+print("SHAPES loaded")
+
+
 conn.close()
+print("Finished loading GTFS data")

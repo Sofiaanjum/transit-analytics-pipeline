@@ -10,3 +10,5 @@ __pycache__/
 *.sqlite
 target/
 dbt_packages/
+.env
+venv/

@@ -5,37 +5,122 @@ models:
   - name: stg_routes
     description: "Cleaned staging table for GTFS routes data"
     columns:
-
       - name: route_id
         description: "Unique identifier for each transit route"
         tests:
           - not_null
           - unique
-
       - name: route_short_name
         description: "Short name of the route"
-
       - name: route_long_name
         description: "Full descriptive name of the route"
-
       - name: route_type
         description: "Type of transit route"
 
   - name: stg_stops
     description: "Cleaned staging table for GTFS stops data"
     columns:
-
       - name: stop_id
         description: "Unique stop identifier"
         tests:
           - not_null
           - unique
-
       - name: stop_name
         description: "Name of the stop"
-
       - name: stop_lat
         description: "Latitude of the stop"
-
       - name: stop_lon
         description: "Longitude of the stop"
+
+  - name: stg_trips
+    description: "Staging table for trips data, linking routes to service schedules"
+    columns:
+      - name: trip_id
+        description: "Unique trip identifier"
+        tests:
+          - not_null
+          - unique
+      - name: route_id
+        description: "ID of the route this trip belongs to"
+      - name: service_id
+        description: "ID of the service calendar for this trip"
+      - name: trip_headsign
+        description: "Trip destination name shown to riders"
+      - name: direction_id
+        description: "Direction of travel (0 or 1)"
+      - name: block_id
+        description: "Block ID for grouping trips"
+      - name: shape_id
+        description: "Shape ID linking to the geometry of the trip"
+
+  - name: stg_stop_times
+    description: "Staging table capturing arrival and departure times for each stop in a trip"
+    columns:
+      - name: trip_id
+        description: "Trip identifier"
+      - name: stop_id
+        description: "Stop identifier"
+      - name: arrival_time
+        description: "Scheduled arrival time at the stop"
+      - name: departure_time
+        description: "Scheduled departure time from the stop"
+      - name: stop_sequence
+        description: "Sequence of the stop within the trip"
+
+  - name: stg_calendar
+    description: "Service calendar indicating which days each service operates"
+    columns:
+      - name: service_id
+        description: "Identifier for a set of service dates"
+      - name: monday
+        description: "Service available on Monday (1=Yes, 0=No)"
+      - name: tuesday
+        description: "Service available on Tuesday"
+      - name: wednesday
+        description: "Service available on Wednesday"
+      - name: thursday
+        description: "Service available on Thursday"
+      - name: friday
+        description: "Service available on Friday"
+      - name: saturday
+        description: "Service available on Saturday"
+      - name: sunday
+        description: "Service available on Sunday"
+      - name: start_date
+        description: "Start date of the service period"
+      - name: end_date
+        description: "End date of the service period"
+
+  - name: stg_calendar_dates
+    description: "Overrides to the service calendar for specific dates"
+    columns:
+      - name: service_id
+        description: "Service identifier this exception applies to"
+      - name: date
+        description: "Specific date of exception"
+      - name: exception_type
+        description: "1=added service, 2=removed service"
+
+  - name: stg_agency
+    description: "Transit agency metadata"
+    columns:
+      - name: agency_id
+        description: "Unique identifier for the transit agency"
+      - name: agency_name
+        description: "Name of the transit agency"
+      - name: agency_url
+        description: "Agency website"
+      - name: agency_timezone
+        description: "Timezone for the agency operations"
+
+  - name: stg_shapes
+    description: "Staging table containing the geometrical path for trips"
+    columns:
+      - name: shape_id
+        description: "Unique identifier for each shape"
+      - name: shape_pt_lat
+        description: "Latitude of a point on the shape"
+      - name: shape_pt_lon
+        description: "Longitude of a point on the shape"
+      - name: shape_pt_sequence
+        description: "Order of the point in the shape"
