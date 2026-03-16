@@ -6,6 +6,7 @@ import snowflake.connector
 import os
 from dotenv import load_dotenv
 
+# Load from .env for LOCAL development
 load_dotenv()
 
 st.set_page_config(
@@ -27,23 +28,92 @@ h2 { color: #2E75B6; font-size: 1.1rem; }
 
 @st.cache_resource
 def get_connection():
-    return snowflake.connector.connect(
-        account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        user=os.getenv("SNOWFLAKE_USER"),
-        password=os.getenv("SNOWFLAKE_PASSWORD"),
-        warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
-        database=os.getenv("SNOWFLAKE_DATABASE"),
-        schema=os.getenv("SNOWFLAKE_SCHEMA")
-    )
+    """Get Snowflake connection with error handling for both local and cloud"""
+    try:
+        # Try to get from Streamlit secrets first (Cloud), then from env vars (Local)
+        try:
+            account = st.secrets["snowflake"]["account"]
+            user = st.secrets["snowflake"]["user"]
+            password = st.secrets["snowflake"]["password"]
+            warehouse = st.secrets["snowflake"]["warehouse"]
+            database = st.secrets["snowflake"]["database"]
+            schema = st.secrets["snowflake"]["schema"]
+        except (KeyError, FileNotFoundError):
+            # Fallback to environment variables for local development
+            account = os.getenv("SNOWFLAKE_ACCOUNT")
+            user = os.getenv("SNOWFLAKE_USER")
+            password = os.getenv("SNOWFLAKE_PASSWORD")
+            warehouse = os.getenv("SNOWFLAKE_WAREHOUSE")
+            database = os.getenv("SNOWFLAKE_DATABASE")
+            schema = os.getenv("SNOWFLAKE_SCHEMA")
+        
+        # Check if all required credentials exist
+        if not all([account, user, password, warehouse, database, schema]):
+            st.error("❌ Missing Snowflake credentials!")
+            st.info("""
+            **For Streamlit Cloud:**
+            1. Go to your app → Manage app → Secrets
+            2. Add this TOML format:
+            ```toml
+            [snowflake]
+            account = "your_account"
+            user = "your_user"
+            password = "your_password"
+            warehouse = "your_warehouse"
+            database = "your_database"
+            schema = "your_schema"
+            ```
+            
+            **For Local Development:**
+            Create `.env` file in project root with:
+            ```
+            SNOWFLAKE_ACCOUNT=your_account
+            SNOWFLAKE_USER=your_user
+            SNOWFLAKE_PASSWORD=your_password
+            SNOWFLAKE_WAREHOUSE=your_warehouse
+            SNOWFLAKE_DATABASE=your_database
+            SNOWFLAKE_SCHEMA=your_schema
+            ```
+            """)
+            st.stop()
+        
+        conn = snowflake.connector.connect(
+            account=account,
+            user=user,
+            password=password,
+            warehouse=warehouse,
+            database=database,
+            schema=schema
+        )
+        
+        return conn
+        
+    except snowflake.connector.errors.ProgrammingError as e:
+        st.error(f"❌ Snowflake Authentication Error: {str(e)}")
+        st.warning("Check your credentials in Streamlit Secrets (Cloud) or .env (Local)")
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ Connection Error: {str(e)}")
+        st.stop()
 
 @st.cache_data
 def run_query(query):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(query)
-    columns = [col[0] for col in cursor.description]
-    data = cursor.fetchall()
-    return pd.DataFrame(data, columns=columns)
+    """Execute query with error handling"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(query)
+        columns = [col[0] for col in cursor.description]
+        data = cursor.fetchall()
+        return pd.DataFrame(data, columns=columns)
+        
+    except snowflake.connector.errors.ProgrammingError as e:
+        st.error(f"❌ Query Error: Table might not exist or wrong schema")
+        st.code(f"Query: {query}", language="sql")
+        st.stop()
+    except Exception as e:
+        st.error(f"❌ Error executing query: {str(e)}")
+        st.stop()
 
 BLUE       = "#1F4E79"
 MED_BLUE   = "#2E75B6"
