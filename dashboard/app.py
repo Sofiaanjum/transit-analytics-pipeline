@@ -39,7 +39,11 @@ def get_connection():
 @st.cache_data
 def run_query(query):
     conn = get_connection()
-    return pd.read_sql(query, conn)
+    cursor = conn.cursor()
+    cursor.execute(query)
+    columns = [col[0] for col in cursor.description]
+    data = cursor.fetchall()
+    return pd.DataFrame(data, columns=columns)
 
 BLUE       = "#1F4E79"
 MED_BLUE   = "#2E75B6"
