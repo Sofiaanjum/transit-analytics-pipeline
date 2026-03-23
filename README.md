@@ -1,97 +1,119 @@
 # TTC Transit Analytics Pipeline
 
-> **End-to-end data engineering pipeline** for Toronto Transit Commission (TTC) transit data — built with Python, Snowflake, dbt, and SQL to deliver analytics-ready datasets for transit operations analysis.
+A production-style, end-to-end data engineering pipeline built on real Toronto Transit Commission (TTC) GTFS data. Raw transit files are ingested, validated, transformed through layered dbt models in Snowflake, and served as analytics-ready tables powering a live interactive dashboard.
+
+**Live Dashboard: [transit-analytics-pipeline.streamlit.app](https://transit-analytics-pipeline.streamlit.app)**
 
 ---
 
-## Project Overview
+## What This Project Does
 
-This project simulates a **production-style data engineering pipeline** for public transit analytics, using real TTC GTFS (General Transit Feed Specification) datasets.
+Most data engineering portfolios use toy datasets or synthetic data. This project uses the actual TTC GTFS static feed — the same format transit agencies worldwide use to publish their schedules — and builds a full analytics stack on top of it.
 
-Raw transit data is ingested, validated, transformed, and modelled into analytics-ready tables that can power dashboards and operational insights — similar to how a data engineering team at a transit or logistics platform would build their data infrastructure.
+The pipeline processes:
 
-**Key analytics this pipeline enables:**
-- Route performance and trip frequency analysis
-- Stop-level activity and service coverage metrics
-- Schedule adherence and service frequency monitoring
-- Network-wide operational reporting
+- 229 routes across Bus, Subway, and Streetcar networks
+- 9,512 stops classified by activity level across Toronto
+- 267,330 scheduled trips
+- 135 million+ stop events processed end-to-end
+
+The result is a five-page analytics dashboard that answers real operational questions about the TTC network.
+
+---
+
+## Dashboard
+
+### Executive Summary
+![Executive Summary](screenshots/01_executive_summary.png)
+
+Network-wide KPIs — total routes, trips, stops, and stop events — with route type composition and performance breakdown by transit mode.
+
+### Route Performance
+![Route Performance](screenshots/02_route_performance.png)
+
+Top routes ranked by trip volume, color-coded by route type, with a route scorecard showing performance classification and a complexity scatter plot.
+
+### Stop Activity
+![Stop Activity](screenshots/03_stop_activity.png)
+
+Stop classification (Major Hub, High Activity, Moderate, Low Activity) with an interactive Toronto map showing all 9,512 stops plotted by coordinates and activity level.
+
+### Service Frequency
+![Service Frequency](screenshots/04_service_frequency.png)
+
+Hourly trip volume across the full day, highlighting morning peak (7-9 AM), evening peak (4-7 PM), and off-peak periods with a service period breakdown.
+
+### Trip Patterns
+![Trip Patterns](screenshots/05_trip_patterns.png)
+
+Inbound vs outbound trip distribution by route type, route complexity analysis, and a full trip patterns table with directional breakdowns.
 
 ---
 
 ## Architecture
 
 ```
-GTFS Static Files
+TTC GTFS Static Files
 (routes, stops, trips, stop_times)
-        │
-        ▼
-Python Ingestion Scripts
-(load_gtfs_static.py)
-  - Schema validation
-  - Type coercion
-  - Bulk load to Snowflake
-        │
-        ▼
+          |
+          v
+Python Ingestion Layer
+  - Schema validation and type coercion
+  - PyArrow bulk loading to Snowflake
+  - Handles GTFS edge cases (e.g. times past 24:00)
+          |
+          v
 Snowflake Raw Layer
 (RAW_ROUTES, RAW_STOPS, RAW_TRIPS, RAW_STOP_TIMES)
-        │
-        ▼
+          |
+          v
 dbt Transformation Layer
-  - Staging models (cleaning + standardization)
-  - Intermediate models (joins + business logic)
-  - Mart models (analytics-ready tables)
-        │
-        ▼
-Analytics Tables
-(route_metrics, stop_metrics, trip_summary)
-        │
-        ▼
-Visualization / Downstream Analysis
+  - Staging: clean and standardize raw tables
+  - Marts: business-ready aggregations
+          |
+          v
+Mart Tables
+(mart_route_performance, mart_stop_activity,
+ mart_service_frequency, mart_trip_patterns,
+ mart_network_overview)
+          |
+          v
+Streamlit Dashboard
+(live at transit-analytics-pipeline.streamlit.app)
 ```
 
 ---
 
-## Tools & Technologies
+## Tools and Technologies
 
-| Layer | Tool | Purpose |
-|-------|------|---------|
-| Ingestion | Python (pandas, PyArrow) | Load GTFS files, handle schema conversion |
-| Warehouse | Snowflake | Cloud data warehouse — raw + analytics layers |
-| Transformation | dbt (data build tool) | Modular SQL transformations, testing, lineage |
-| Transformation | SQL | Analytics table logic and metrics calculations |
-| Data Format | GTFS Static Feed | Industry-standard transit data specification |
+| Layer | Tool | Why |
+|-------|------|-----|
+| Ingestion | Python, pandas, PyArrow | Schema validation, efficient bulk loading |
+| Warehouse | Snowflake | Scalable cloud data warehouse |
+| Transformation | dbt | Modular, testable SQL models with lineage |
+| Dashboard | Streamlit, Plotly | Interactive visualizations, live Snowflake connection |
+| Data format | GTFS Static Feed | Industry-standard transit specification |
 
 ---
 
-## Project Structure
+## dbt Models
 
 ```
-ttc-transit-analytics/
-│
-├── ingestion/
-│   ├── load_gtfs_static.py       # Main ingestion script
-│   └── schema.py                 # Schema definitions and type mappings
-│
-├── dbt_project/
-│   ├── models/
-│   │   ├── staging/              # stg_routes, stg_stops, stg_trips, stg_stop_times
-│   │   ├── intermediate/         # int_trip_stop_counts, int_route_trip_counts
-│   │   └── marts/                # route_metrics, stop_metrics, trip_summary
-│   ├── tests/                    # dbt data quality tests
-│   └── dbt_project.yml
-│
-├── transformations/
-│   ├── trip_metrics.sql          # Trip-level aggregations
-│   └── route_metrics.sql         # Route-level performance metrics
-│
-├── warehouse/
-│   └── table_definitions.sql     # Snowflake table schemas
-│
-├── data/
-│   └── raw_gtfs_files/           # Source GTFS .txt files
-│
-├── requirements.txt
-└── README.md
+transit_dbt/models/
+|
++-- staging/
+|   +-- stg_routes.sql          # Route type normalization
+|   +-- stg_stops.sql           # Stop coordinates and names
+|   +-- stg_trips.sql           # Trip and direction mapping
+|   +-- stg_stop_times.sql      # Time parsing, hour extraction
+|   +-- stg_calendar.sql        # Weekday / weekend classification
+|
++-- marts/
+    +-- mart_route_performance.sql   # Trips, stops, avg stops per route
+    +-- mart_stop_activity.sql       # Visit counts, activity classification
+    +-- mart_service_frequency.sql   # Hourly trip volume and peak periods
+    +-- mart_trip_patterns.sql       # Inbound/outbound, complexity metrics
+    +-- mart_network_overview.sql    # Network-level summary by route type
 ```
 
 ---
@@ -100,86 +122,80 @@ ttc-transit-analytics/
 
 **TTC GTFS Static Feed** — publicly available from the Toronto Transit Commission.
 
-| File | Description |
-|------|-------------|
-| `routes.txt` | All TTC routes (bus, subway, streetcar) |
-| `stops.txt` | Stop locations with coordinates |
-| `trips.txt` | Individual scheduled trips per route |
-| `stop_times.txt` | Arrival/departure times at each stop |
+| File | Rows | Description |
+|------|------|-------------|
+| routes.txt | 1,832 | All TTC routes |
+| stops.txt | 75,336 | Stop locations with coordinates |
+| trips.txt | 267,330 | Scheduled trips per route |
+| stop_times.txt | 8,498,298 | Arrival and departure times at each stop |
 
 ---
 
-## Getting Started
+## Business Questions This Pipeline Answers
 
-**1. Clone the repository**
-```bash
-git clone https://github.com/sofiaanjum/ttc-transit-analytics.git
-cd ttc-transit-analytics
-```
+| Question | Model |
+|----------|-------|
+| Which routes carry the highest passenger load? | mart_route_performance |
+| Where are the busiest transfer hubs in Toronto? | mart_stop_activity |
+| Is service adequate during morning and evening peak hours? | mart_service_frequency |
+| How are inbound and outbound trips distributed? | mart_trip_patterns |
+| What percentage of trips does each route type carry? | mart_network_overview |
 
-**2. Set up Python environment**
+---
+
+## Engineering Challenges
+
+**GTFS time format** — stop_times can contain values like 25:30:00 to represent trips past midnight. The staging model handles this with conditional hour extraction so downstream models work correctly.
+
+**Data volume** — 8.5 million rows in stop_times required PyArrow for efficient bulk loading rather than row-by-row inserts. Load time dropped significantly.
+
+**Stop classification** — mart_stop_activity uses Snowflake window functions (PERCENTILE_CONT) to classify stops into activity tiers based on their relative visit counts across the full network.
+
+**Pipeline modularity** — staging models clean and standardize raw data, mart models join and aggregate. Each layer is independently testable and replaceable without touching the others.
+
+---
+
+## Running the Project
+
 ```bash
+# Clone and set up
+git clone https://github.com/Sofiaanjum/transit-analytics-pipeline.git
+cd transit-analytics-pipeline
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-```
 
-**3. Configure Snowflake credentials**
-```bash
+# Configure Snowflake credentials
 cp .env.example .env
-# Add your Snowflake account, username, password, warehouse, and database
-```
 
-**4. Run ingestion pipeline**
-```bash
+# Run ingestion
 python ingestion/load_gtfs_static.py
-```
-Loads raw GTFS files into Snowflake staging tables:
-`RAW_ROUTES`, `RAW_STOPS`, `RAW_TRIPS`, `RAW_STOP_TIMES`
 
-**5. Run dbt transformations**
-```bash
-cd dbt_project
-dbt deps
+# Run dbt transformations
+cd transit_dbt
 dbt run
 dbt test
+
+# Launch dashboard
+cd ..
+streamlit run dashboard/app.py
 ```
-
----
-
-## Analytics This Pipeline Answers
-
-| Business Question | Model |
-|-------------------|-------|
-| Which TTC routes have the most scheduled trips? | `route_metrics` |
-| Which stops are served most frequently? | `stop_metrics` |
-| How many trips operate per route per day? | `trip_summary` |
-| What is the average number of stops per trip? | `trip_metrics` |
-| Which routes cover the largest number of stops? | `route_metrics` |
-
----
-
-## Engineering Challenges Solved
-
-- **Inconsistent GTFS data types** — handled via schema validation layer in `schema.py` before Snowflake load
-- **Large file ingestion** — used PyArrow for efficient CSV-to-Snowflake bulk loading
-- **Schema alignment** — automated type coercion between GTFS flat files and Snowflake column definitions
-- **Transformation modularity** — dbt staging → intermediate → mart layering ensures clean separation of concerns and reusable models
 
 ---
 
 ## Roadmap
 
-- [ ] Add **GTFS Realtime feeds** for live delay and vehicle position tracking
-- [ ] Implement **dbt data quality tests** (not_null, unique, accepted_values)
-- [ ] Schedule pipeline using **Apache Airflow**
-- [ ] Build **Power BI / Metabase dashboard** for route performance monitoring
-- [ ] Add **incremental dbt models** for efficient daily data refresh
+- [ ] GTFS Realtime feeds for live delay and vehicle position tracking
+- [ ] Airflow DAGs for scheduled pipeline runs
+- [ ] dbt tests for data quality enforcement
+- [ ] Incremental dbt models for efficient daily refresh
 
 ---
 
 ## Author
 
-**Sofia Ahmed** — Data Engineer  
-[LinkedIn](https://www.linkedin.com/in/sofiaanjum) | [Portfolio](https://sofiaanjum.github.io/webportfolio/)  
-*Azure Data Engineer Associate | Databricks Certified | AWS Cloud Practitioner*
+**Sofia Ahmed** — Data Engineer
+
+[LinkedIn](https://www.linkedin.com/in/sofiaanjum) | [Portfolio](https://sofiaanjum.github.io/webportfolio/) | [Live Dashboard](https://transit-analytics-pipeline.streamlit.app)
+
+Azure Data Engineer Associate (DP-203) | Databricks Certified Data Engineer | AWS Cloud Practitioner
