@@ -52,6 +52,8 @@ Inbound vs outbound trip distribution by route type, route complexity analysis, 
 
 ## Architecture
 
+![Pipeline Architecture](screenshots/pipeline_diagram.png)
+
 ```
 TTC GTFS Static Files
 (routes, stops, trips, stop_times)
