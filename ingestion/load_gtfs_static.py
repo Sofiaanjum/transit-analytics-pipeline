@@ -31,7 +31,7 @@ routes = routes[[
 routes.columns = routes.columns.str.upper()
 
 write_pandas(conn, routes, "ROUTES")
-print("ROUTES loaded")
+print("ROUTES loaded and columns renamed")
 
 
 # STOPS
@@ -40,7 +40,7 @@ stops = stops[["stop_id", "stop_name", "stop_lat", "stop_lon"]]
 stops.columns = stops.columns.str.upper()
 
 write_pandas(conn, stops, "STOPS")
-print("STOPS loaded")
+print("STOPS loaded and columns renamed")
 
 
 # TRIPS
@@ -57,7 +57,7 @@ trips = trips[[
 trips.columns = trips.columns.str.upper()
 
 write_pandas(conn, trips, "TRIPS")
-print("TRIPS loaded")
+print("TRIPS loaded and columns renamed")
 
 
 # STOP_TIMES
@@ -72,7 +72,7 @@ stop_times = stop_times[[
 stop_times.columns = stop_times.columns.str.upper()
 
 write_pandas(conn, stop_times, "STOP_TIMES")
-print("STOP_TIMES loaded")
+print("STOP_TIMES loaded and columns renamed")
 
 
 # CALENDAR
@@ -80,7 +80,7 @@ calendar = pd.read_csv(f"{GTFS_PATH}/calendar.txt", dtype=str)
 calendar.columns = calendar.columns.str.upper()
 
 write_pandas(conn, calendar, "CALENDAR")
-print("CALENDAR loaded")
+print("CALENDAR loaded and columns renamed")
 
 
 # AGENCY
@@ -94,7 +94,7 @@ agency = agency[[
 agency.columns = agency.columns.str.upper()
 
 write_pandas(conn, agency, "AGENCY")
-print("AGENCY loaded")
+print("AGENCY loaded and columns renamed")
 
 
 # CALENDAR_DATES
@@ -102,7 +102,7 @@ calendar_dates = pd.read_csv(f"{GTFS_PATH}/calendar_dates.txt", dtype=str)
 calendar_dates.columns = calendar_dates.columns.str.upper()
 
 write_pandas(conn, calendar_dates, "CALENDAR_DATES")
-print("CALENDAR_DATES loaded")
+print("CALENDAR_DATES loaded and columns renamed")
 
 
 # SHAPES
@@ -116,8 +116,8 @@ shapes = shapes[[
 shapes.columns = shapes.columns.str.upper()
 
 write_pandas(conn, shapes, "SHAPES")
-print("SHAPES loaded")
+print("SHAPES loaded and columns renamed")
 
 
 conn.close()
-print("Finished loading GTFS data")
+print("Finished loading GTFS data") 
